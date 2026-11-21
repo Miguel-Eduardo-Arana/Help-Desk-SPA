@@ -1,0 +1,6 @@
+{
+  "name": "Soportech Vzla — Helpdesk SPA",
+  "description": "Sistema de mesa de ayuda y soporte técnico TI con agente inteligente AgentDesk, base de conocimientos y persistencia local en SQLite.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
