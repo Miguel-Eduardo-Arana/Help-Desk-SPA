@@ -1,4 +1,4 @@
-# Soportech Vzla — Helpdesk SPA
+# Help Desk SPA
 
 Aplicación web tipo **Single Page Application (SPA)** minimalista para gestión de mesa de ayuda y soporte técnico TI a usuarios y computadoras corporativas, con persistencia local en **SQLite** y asistencia inteligente mediante **AgentDesk** conectado a una Base de Conocimientos interna.
 
