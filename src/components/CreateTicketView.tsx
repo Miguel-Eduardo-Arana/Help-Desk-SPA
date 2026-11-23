@@ -566,7 +566,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
               {submitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-                  <span>Registrando y consultando AgentDesk...</span>
+                  <span>Registrando ticket...</span>
                 </>
               ) : (
                 <>
@@ -576,6 +576,17 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
               )}
             </button>
           </div>
+          {submitting && (
+            <p
+              role="status"
+              aria-live="polite"
+              className="flex items-center gap-2 text-sm text-amber-800"
+            >
+              <Loader2 className="w-4 h-4 animate-spin shrink-0" aria-hidden="true" />
+              AgentDesk puede estar ocupado. Esperaremos y reintentaremos automáticamente hasta 3
+              veces.
+            </p>
+          )}
         </form>
 
         {/* Right Metadata & Classification Preview Column */}

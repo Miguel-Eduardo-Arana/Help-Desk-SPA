@@ -231,6 +231,18 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({
         </div>
       )}
 
+      {(analyzing || sendingMsg) && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="p-4 border border-amber-200 bg-amber-50/80 rounded-xl flex items-center gap-2 text-sm text-amber-900"
+        >
+          <Loader2 className="w-4 h-4 animate-spin shrink-0" aria-hidden="true" />
+          AgentDesk puede estar ocupado. Esperaremos y reintentaremos automáticamente hasta 3
+          veces.
+        </div>
+      )}
+
       {aiError && (
         <div className="p-4 border border-amber-200 bg-amber-50/80 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="text-sm text-amber-900">

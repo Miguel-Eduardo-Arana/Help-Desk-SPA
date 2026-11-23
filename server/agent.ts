@@ -7,6 +7,8 @@ import type {
 } from '../src/types/helpdesk.ts';
 import { findRelevantKbArticles } from './db.ts';
 
+const GEMINI_RETRY_DELAYS_MS = [1000, 2000, 4000];
+
 function getGeminiClient(): GoogleGenAI {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
@@ -22,6 +24,44 @@ function getGeminiClient(): GoogleGenAI {
       },
     },
   });
+}
+
+function isTemporaryGeminiError(error: unknown): boolean {
+  const details =
+    typeof error === 'object' && error !== null
+      ? (error as { status?: unknown; code?: unknown; message?: unknown })
+      : {};
+  const status = details.status === 503 || details.status === '503';
+  const code =
+    typeof details.code === 'string' && details.code.toUpperCase() === 'UNAVAILABLE';
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : typeof details.message === 'string'
+          ? details.message
+          : '';
+
+  return status || code || /\b503\b|UNAVAILABLE|high demand|temporarily unavailable/i.test(message);
+}
+
+async function generateContentWithRetry<T>(generate: () => Promise<T>): Promise<T> {
+  for (let retry = 0; ; retry += 1) {
+    try {
+      return await generate();
+    } catch (error) {
+      if (!isTemporaryGeminiError(error)) {
+        throw error;
+      }
+      if (retry >= GEMINI_RETRY_DELAYS_MS.length) {
+        throw new Error(
+          `AgentDesk sigue ocupado después de ${GEMINI_RETRY_DELAYS_MS.length} reintentos. Espere unos minutos y vuelva a intentarlo.`
+        );
+      }
+      await new Promise((resolve) => setTimeout(resolve, GEMINI_RETRY_DELAYS_MS[retry]));
+    }
+  }
 }
 
 export async function analyzeTicketWithAgentDesk(
@@ -53,7 +93,7 @@ Descripción detallada: ${ticket.description}
 Base de Conocimientos local (SQLite):
 ${kbContext}`;
 
-  const response = await ai.models.generateContent({
+  const response = await generateContentWithRetry(() => ai.models.generateContent({
     model: 'gemini-4-hydrogen',
     contents: prompt,
     config: {
@@ -100,7 +140,7 @@ ${kbContext}`;
         ],
       },
     },
-  });
+  }));
 
   const rawText = (response.text ?? '').trim();
   if (!rawText) {
@@ -166,7 +206,7 @@ ${userMessage}
 
 Responde de forma clara, empática y orientada a resolver el caso. Si los pasos anteriores no funcionaron y requiere intervención física o administrativa, indica explícitamente que puede presionar "Escalar a Soporte Humano".`;
 
-  const response = await ai.models.generateContent({
+  const response = await generateContentWithRetry(() => ai.models.generateContent({
     model: 'gemini-4-hydrogen',
     contents: prompt,
     config: {
@@ -174,7 +214,7 @@ Responde de forma clara, empática y orientada a resolver el caso. Si los pasos 
         'Eres AgentDesk, asistente de soporte técnico TI de Soportech Vzla. Responde en español conciso, sin inventar herramientas inexistentes, basándote en la base de conocimientos corporativa.',
       thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
     },
-  });
+  }));
 
   const text = (response.text ?? '').trim();
   if (!text) {
